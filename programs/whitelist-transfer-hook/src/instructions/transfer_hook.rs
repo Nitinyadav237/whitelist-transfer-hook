@@ -39,8 +39,8 @@ pub struct TransferHook<'info> {
     )]
     pub extra_account_meta_list: UncheckedAccount<'info>,
     #[account(
-        seeds = [b"whitelist"], 
-        bump = whitelist.bump,
+    seeds = [b"whitelist", source_token.owner.as_ref()], 
+    bump = whitelist.bump,
     )]
     pub whitelist: Account<'info, Whitelist>,
 }
@@ -49,18 +49,15 @@ impl<'info> TransferHook<'info> {
     /// This function is called when the transfer hook is executed.
     pub fn transfer_hook(&mut self, _amount: u64) -> Result<()> {
         // Fail this instruction if it is not called from within a transfer hook
-        
+
         self.check_is_transferring()?;
 
         msg!("Source token owner: {}", self.source_token.owner);
         msg!("Destination token owner: {}", self.destination_token.owner);
 
-        if self.whitelist.address.contains(&self.source_token.owner) {
-            msg!("Transfer allowed: The address is whitelisted");
-        } else {
-            panic!("TransferHook: Address is not whitelisted");
-        }
-
+        // If we reached here, the whitelist PDA exists and was validated
+        // This means the user IS whitelisted
+        msg!("Transfer allowed: The address is whitelisted");
         Ok(())
     }
 
